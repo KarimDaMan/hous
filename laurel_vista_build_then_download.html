@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Laurel Vista Photo ZIP Builder</title>
+<style>
+  body { margin:0; font-family:system-ui,-apple-system,Segoe UI,sans-serif; background:#0b0b0d; color:#f5f5f7; }
+  .wrap { max-width:760px; margin:0 auto; padding:32px 20px; }
+  .card { background:#16161a; border:1px solid #2a2a31; border-radius:18px; padding:24px; }
+  h1 { margin:0 0 8px; font-size:26px; }
+  p { color:#b7b7c2; line-height:1.5; }
+  .actions { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  button { width:100%; border:0; border-radius:14px; padding:16px; font-size:17px; font-weight:700; cursor:pointer; background:#f5f5f7; color:#111; }
+  @media (max-width:560px) { .actions { grid-template-columns:1fr; } }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  .bar { height:10px; background:#28282f; border-radius:999px; overflow:hidden; margin-top:18px; }
+  .fill { width:0%; height:100%; background:#f5f5f7; transition:width .15s; }
+  #status { margin-top:12px; font-variant-numeric:tabular-nums; }
+  #log { margin-top:16px; max-height:260px; overflow:auto; background:#0d0d10; border-radius:12px; padding:12px; font:12px/1.5 ui-monospace,monospace; white-space:pre-wrap; color:#b8b8c3; }
+  .small { font-size:12px; color:#888894; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>10701 Laurel Vista Way</h1>
+    <p>November 2025 photo ZIP builder. This will fetch all 80 direct Realtor CDN images and save them as one ZIP.</p>
+    <div class="actions">
+      <button id="build">BUILD ZIP</button>
+      <button id="download" disabled>DOWNLOAD ZIP</button>
+    </div>
+    <div class="bar"><div class="fill" id="fill"></div></div>
+    <div id="status">Ready: 80 photos</div>
+    <div id="log"></div>
+    <p class="small">If Chrome asks to allow a download, allow it. Nothing is uploaded from your device.</p>
+  </div>
+</div>
+
+<script>
+const URLS = ["https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m435619574rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m3948300423rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m2486690685rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m1006175602rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m1625031018rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m2801886632rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m3477704393rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m897495149rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m3862762502rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m735782589rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m2419993633rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m1269888925rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m30628383rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m3486512796rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m2620480464rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m1660501836rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m129049549rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m4222931090rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m3415797072rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m1427993397rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m918332117rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m3896549029rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m3277211568rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m4035797974rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m635114558rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m2008639423rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m4158649264rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m3776586823rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m3233087594rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m1288367179rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m373464006rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m2130630588rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m315108181rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m1123143989rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m4070694152rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m3124538744rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m3795619359rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m1700691970rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m2575323029rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m1562897473rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m3146199672rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m870985195rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m3945817807rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m3184674195rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m1230812717rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m4213793059rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m1655613034rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m3824396579rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m2293153645rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m766008457rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m2033267695rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m3096619269rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m2420399555rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m1891738413rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m274174042rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m3339714145rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m1624392520rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m2063215039rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m1181185120rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m2290561447rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m1589713349rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m365837672rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m3990262857rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m73442668rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m354054910rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m1573716239rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m783855207rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m2273879853rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m2913887498rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m429492379rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m1112208960rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m3730615087rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m3328151602rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m743688913rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m1034275567rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m356027180rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m1938891745rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m731607648rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m398804538rd-w1280_h960.webp", "https://ap.rdcpix.com/ea71449fde88737cc892584a469e69dbl-m2714495068rd-w1280_h960.webp"];
+const buildBtn = document.getElementById('build');
+const downloadBtn = document.getElementById('download');
+let builtZipBlob = null;
+const fill = document.getElementById('fill');
+const statusEl = document.getElementById('status');
+const logEl = document.getElementById('log');
+
+function log(s) {
+  logEl.textContent += s + "\n";
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+const crcTable = (() => {
+  const t = new Uint32Array(256);
+  for (let n=0;n<256;n++) {
+    let c=n;
+    for (let k=0;k<8;k++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n]=c>>>0;
+  }
+  return t;
+})();
+
+function crc32(u8) {
+  let c=0xffffffff;
+  for (let i=0;i<u8.length;i++) c = crcTable[(c ^ u8[i]) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+
+function u16(v) { return new Uint8Array([v&255,(v>>>8)&255]); }
+function u32(v) { return new Uint8Array([v&255,(v>>>8)&255,(v>>>16)&255,(v>>>24)&255]); }
+function concat(parts) {
+  const len=parts.reduce((n,p)=>n+p.length,0), out=new Uint8Array(len);
+  let o=0; for (const p of parts) { out.set(p,o); o+=p.length; }
+  return out;
+}
+const enc = new TextEncoder();
+
+function makeZip(files) {
+  const locals=[], centrals=[];
+  let offset=0;
+  for (const f of files) {
+    const name = enc.encode(f.name);
+    const data = f.data;
+    const crc = crc32(data);
+    const local = concat([
+      u32(0x04034b50), u16(20), u16(0), u16(0), u16(0), u16(0),
+      u32(crc), u32(data.length), u32(data.length), u16(name.length), u16(0),
+      name, data
+    ]);
+    locals.push(local);
+
+    const central = concat([
+      u32(0x02014b50), u16(20), u16(20), u16(0), u16(0), u16(0), u16(0),
+      u32(crc), u32(data.length), u32(data.length), u16(name.length),
+      u16(0), u16(0), u16(0), u16(0), u32(0), u32(offset), name
+    ]);
+    centrals.push(central);
+    offset += local.length;
+  }
+  const centralBlob = concat(centrals);
+  const end = concat([
+    u32(0x06054b50), u16(0), u16(0), u16(files.length), u16(files.length),
+    u32(centralBlob.length), u32(offset), u16(0)
+  ]);
+  return new Blob([...locals, centralBlob, end], {type:'application/zip'});
+}
+
+async function fetchOne(url) {
+  const attempts = [
+    url,
+    'https://corsproxy.io/?url=' + encodeURIComponent(url),
+    'https://api.allorigins.win/raw?url=' + encodeURIComponent(url)
+  ];
+  let lastErr;
+  for (const u of attempts) {
+    try {
+      const r = await fetch(u, {cache:'no-store'});
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const ab = await r.arrayBuffer();
+      if (ab.byteLength < 1000) throw new Error('response too small');
+      return new Uint8Array(ab);
+    } catch (e) {
+      lastErr=e;
+    }
+  }
+  throw lastErr || new Error('fetch failed');
+}
+
+buildBtn.addEventListener('click', async () => {
+  buildBtn.disabled=true;
+downloadBtn.disabled=true;
+builtZipBlob=null;
+  logEl.textContent='';
+  const files=[];
+  const failed=[];
+  let done=0, next=0;
+
+  async function worker() {
+    while (true) {
+      const i = next++;
+      if (i >= URLS.length) return;
+      const name = String(i+1).padStart(3,'0') + '.webp';
+      try {
+        log('Fetching ' + name + ' ...');
+        const data = await fetchOne(URLS[i]);
+        files.push({name, data, i});
+        log('OK      ' + name + ' (' + Math.round(data.length/1024) + ' KB)');
+      } catch (e) {
+        failed.push({i, error:String(e)});
+        log('FAILED  ' + name + '  ' + e);
+      } finally {
+        done++;
+        fill.style.width = (done/URLS.length*100).toFixed(1) + '%';
+        statusEl.textContent = `Fetching: ${done}/80  •  OK ${files.length}  •  Failed ${failed.length}`;
+      }
+    }
+  }
+
+  await Promise.all([worker(),worker(),worker(),worker()]);
+  files.sort((a,b)=>a.i-b.i);
+
+  const sourceText = URLS.map((u,i)=>`${String(i+1).padStart(3,'0')}.webp\t${u}`).join('\n');
+  files.push({name:'source_urls.txt', data:enc.encode(sourceText), i:999});
+
+  if (!files.length) {
+    statusEl.textContent='Could not fetch the photos.';
+    btn.disabled=false;
+    return;
+  }
+
+  statusEl.textContent='Building ZIP...';
+  builtZipBlob=makeZip(files);
+  statusEl.textContent = `BUILT • ${files.length-1} photos zipped` + (failed.length ? ` • ${failed.length} failed` : '');
+  log('ZIP built. Click DOWNLOAD ZIP.');
+  if (failed.length) log('Failed image numbers: ' + failed.map(x=>x.i+1).join(', '));
+  downloadBtn.disabled=false;
+  buildBtn.disabled=false;
+});
+
+downloadBtn.addEventListener('click', () => {
+  if (!builtZipBlob) return;
+  const a=document.createElement('a');
+  const url=URL.createObjectURL(builtZipBlob);
+  a.href=url;
+  a.download='10701_Laurel_Vista_Nov_2025_Photos.zip';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),10000);
+  statusEl.textContent='DOWNLOAD STARTED';
+});
+</script>
+</body>
+</html>
